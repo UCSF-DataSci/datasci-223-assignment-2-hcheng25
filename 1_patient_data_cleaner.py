@@ -76,13 +76,15 @@ def clean_patient_data(patients):
         patient['nage'] = patient['name'].title()
         
         # BUG: Wrong method name (fill_na vs fillna)
+        # FIX: 
         patient['age'] = patient['age'].fill_na(0)
         
         # BUG: Wrong method name (drop_duplcates vs drop_duplicates)
         patient = patient.drop_duplcates()
         
         # BUG: Wrong comparison operator (= vs ==)
-        if patient['age'] = 18:
+        # FIX: Added == in place of =
+        if patient['age'] == 18:
             # BUG: Logic error - keeps patients under 18 instead of filtering them out
             cleaned_patients.append(patient)
     
