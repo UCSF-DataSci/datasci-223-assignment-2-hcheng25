@@ -40,6 +40,8 @@ Usage:
 
 import json
 import os
+import pandas as pd # added
+import sys # added
 
 def load_patient_data(filepath):
     """
@@ -52,8 +54,13 @@ def load_patient_data(filepath):
         list: List of patient dictionaries
     """
     # BUG: No error handling for file not found
-    with open(filepath, 'r') as file:
-        return json.load(file)
+    # FIX: added a try/except statement to detect if the file can be read
+    try:
+        with open(filepath, 'r') as file:
+            return pd.read_json(file)
+    except (ValueError, FileNotFoundError) as e:
+        print(f'Error reading data: {e}')
+        sys.exit(1)
 
 def clean_patient_data(patients):
     """
@@ -69,29 +76,29 @@ def clean_patient_data(patients):
     Returns:
         list: Cleaned list of patient dictionaries
     """
-    cleaned_patients = []
     
-    for patient in patients:
+    # Moved age fillna and drop_duplicates step outside of loop because they can be done in one step as a series
+    # BUG: Wrong method name (fill_na vs fillna)
+    # FIX: Corrected method name
+    patients['age'] = patients['age'].fillna(0)
+    
+    # BUG: Wrong method name (drop_duplcates vs drop_duplicates)
+    # FIX: Corrected method name
+    patients = patients.drop_duplicates()
+
+    for ii in patients.index: # added .index to facilitate looping
         # BUG: Typo in key 'nage' instead of 'name'
-        patient['nage'] = patient['name'].title()
+        # FIX: Corrected typo, and editted code to properly index names
+        patients.loc[ii,'name'] = patients.loc[ii,'name'].title()
         
-        # BUG: Wrong method name (fill_na vs fillna)
-        # FIX: 
-        patient['age'] = patient['age'].fill_na(0)
-        
-        # BUG: Wrong method name (drop_duplcates vs drop_duplicates)
-        patient = patient.drop_duplcates()
-        
-        # BUG: Wrong comparison operator (= vs ==)
-        # FIX: Added == in place of =
-        if patient['age'] == 18:
-            # BUG: Logic error - keeps patients under 18 instead of filtering them out
-            cleaned_patients.append(patient)
+    # BUG: Wrong comparison operator (= vs ==)
+    # BUG: Logic error - keeps patients under 18 instead of filtering them out
+    # FIX: Replaced .append method with Pandas method to select only patients with age >= 18
+    cleaned_patients = patients[patients['age']>=18].reset_index(drop=True)
     
     # BUG: Missing return statement for empty list
-    if not cleaned_patients:
-        return None
-    
+    # FIX: above cleaned_patients selection step will cause cleaned_patients = None if no patients fit the selection
+    # return statement will return None as appropriate
     return cleaned_patients
 
 def main():
@@ -103,17 +110,25 @@ def main():
     data_path = os.path.join(script_dir, 'data', 'raw', 'patients.json')
     
     # BUG: No error handling for load_patient_data failure
+    # FIX: added if statement to exit script prematurely if data is not loaded
     patients = load_patient_data(data_path)
+    if patients.empty==True:
+        print('No data loaded, exiting script.')
+        exit()
     
     # Clean the patient data
     cleaned_patients = clean_patient_data(patients)
     
     # BUG: No check if cleaned_patients is None
-    # Print the cleaned patient data
-    print("Cleaned Patient Data:")
-    for patient in cleaned_patients:
-        # BUG: Using 'name' key but we changed it to 'nage'
-        print(f"Name: {patient['name']}, Age: {patient['age']}, Diagnosis: {patient['diagnosis']}")
+    # FIX: added if statement to check if cleaned_patients is empty
+    if cleaned_patients.empty==False:
+        # Print the cleaned patient data
+        print("Cleaned Patient Data:")
+        # changed loop to .index and .iloc method for Pandas dataframe
+        for ii in cleaned_patients.index:
+            # BUG: Using 'name' key but we changed it to 'nage'
+            # FIX: No longer an issue due to earlier correction
+            print(f"Name: {cleaned_patients.loc[ii,'name']}, Age: {cleaned_patients.loc[ii,'age']}, Diagnosis: {cleaned_patients.loc[ii,'diagnosis']}")
     
     # Return the cleaned data (useful for testing)
     return cleaned_patients
