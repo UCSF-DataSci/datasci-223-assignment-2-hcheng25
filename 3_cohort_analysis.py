@@ -48,7 +48,7 @@ def main():
     results = analyze_patient_cohorts(input_file)
     
     # Print summary statistics
-    print("\nCohort Analysis Summary:")
+    print("\nCohort Analysis Results:") # Changed from Summary to Results
     print(results)
 
 if __name__ == "__main__":
