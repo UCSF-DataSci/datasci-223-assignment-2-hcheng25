@@ -57,6 +57,7 @@ Medication Factors (mg/kg):
 
 import json
 import os
+import pandas as pd # added
 
 # Dosage factors for different medications (mg per kg of body weight)
 # These are standard dosing factors based on medical guidelines
@@ -94,8 +95,16 @@ def load_patient_data(filepath):
         list: List of patient dictionaries
     """
     # BUG: No error handling for file not found
-    with open(filepath, 'r') as file:
-        return json.load(file)
+    # FIX: added a try/except statement to detect if the file can be read
+    try:
+        with open(filepath, 'r') as file:
+            return pd.read_json(file)
+    except Exception as e:
+        print(f'Error: {e}')
+        sys.exit(1)
+    else:
+        with open(filepath, 'r') as file:
+            return pd.read_json(file)
 
 def calculate_dosage(patient):
     """

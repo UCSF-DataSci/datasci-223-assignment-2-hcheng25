@@ -57,10 +57,13 @@ def load_patient_data(filepath):
     # FIX: added a try/except statement to detect if the file can be read
     try:
         with open(filepath, 'r') as file:
-            return pd.read_json(file)
-    except (ValueError, FileNotFoundError) as e:
-        print(f'Error reading data: {e}')
+            return json.load(file)
+    except Exception as e:
+        print(f'Error: {e}')
         sys.exit(1)
+    else:
+        with open(filepath, 'r') as file:
+            return json.load(file)
 
 def clean_patient_data(patients):
     """
@@ -76,11 +79,14 @@ def clean_patient_data(patients):
     Returns:
         list: Cleaned list of patient dictionaries
     """
-    
+    # convert to pd.dataframe
+    patients = pd.DataFrame(patients)
+
     # Moved age fillna and drop_duplicates step outside of loop because they can be done in one step as a series
     # BUG: Wrong method name (fill_na vs fillna)
     # FIX: Corrected method name
-    patients['age'] = patients['age'].fillna(0)
+    # Also converted to integers to prevent future bugs in function
+    patients['age'] = patients['age'].fillna(0).astype(int)
     
     # BUG: Wrong method name (drop_duplcates vs drop_duplicates)
     # FIX: Corrected method name
@@ -97,9 +103,12 @@ def clean_patient_data(patients):
     cleaned_patients = patients[patients['age']>=18].reset_index(drop=True)
     
     # BUG: Missing return statement for empty list
-    # FIX: above cleaned_patients selection step will cause cleaned_patients = None if no patients fit the selection
-    # return statement will return None as appropriate
-    return cleaned_patients
+    # FIX: return statement will return an empty list when cleaned_patients is empty
+    # otherwise returns cleaned_patients as list of dictionaries
+    if cleaned_patients.empty==False:
+        return cleaned_patients.to_dict('records')
+    else:
+        return []
 
 def main():
     """Main function to run the script."""
@@ -110,25 +119,24 @@ def main():
     data_path = os.path.join(script_dir, 'data', 'raw', 'patients.json')
     
     # BUG: No error handling for load_patient_data failure
-    # FIX: added if statement to exit script prematurely if data is not loaded
+    # FIX: function will exit script upon load failure
     patients = load_patient_data(data_path)
-    if patients.empty==True:
-        print('No data loaded, exiting script.')
-        exit()
     
     # Clean the patient data
     cleaned_patients = clean_patient_data(patients)
     
     # BUG: No check if cleaned_patients is None
     # FIX: added if statement to check if cleaned_patients is empty
-    if cleaned_patients.empty==False:
+    if cleaned_patients == None:
+        print('No cleaned data')
+    else:
         # Print the cleaned patient data
         print("Cleaned Patient Data:")
         # changed loop to .index and .iloc method for Pandas dataframe
-        for ii in cleaned_patients.index:
+        for ii in cleaned_patients:
             # BUG: Using 'name' key but we changed it to 'nage'
             # FIX: No longer an issue due to earlier correction
-            print(f"Name: {cleaned_patients.loc[ii,'name']}, Age: {cleaned_patients.loc[ii,'age']}, Diagnosis: {cleaned_patients.loc[ii,'diagnosis']}")
+            print(f"Name: {ii['name']}, Age: {ii['age']}, Diagnosis: {ii['diagnosis']}")
     
     # Return the cleaned data (useful for testing)
     return cleaned_patients
