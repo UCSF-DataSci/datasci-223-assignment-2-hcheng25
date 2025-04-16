@@ -156,8 +156,8 @@ def calculate_dosage(patient):
     if medication in LOADING_DOSE_MEDICATIONS and is_first_dose==True:
         loading_dose_applied = True
         # BUG: Using addition instead of multiplication for loading dose
-        # No fix needed? base_dosage*2 is the same as base_dosage+base_dosage
-        final_dosage = base_dosage + base_dosage
+        # FIX: replaced with base_dosage*2
+        final_dosage = base_dosage*2
     
     # Add dosage information to the patient record
     patient_with_dosage['base_dosage'] = base_dosage
